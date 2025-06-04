@@ -18,8 +18,9 @@ import {
 import { OctagonAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
-import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
+import { FaGithub, FaGoogle } from 'react-icons/fa';
 
 const formSchema = z
   .object({
@@ -42,8 +43,10 @@ export const SignUpView = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -54,11 +57,12 @@ export const SignUpView = () => {
         name: values.name,
         email: values.email,
         password: values.password,
+        callbackURL: '/',
       },
       {
         onSuccess: () => {
-          router.push('/');
           setPending(false);
+          router.push('/');
         },
         onError: (error) => {
           setError(error.error.message);
@@ -66,6 +70,16 @@ export const SignUpView = () => {
         },
       }
     );
+  };
+  const onGithubSignIn = () => {
+    authClient.signIn.social({
+      provider: 'github',
+    });
+  };
+  const onGoogleSignIn = () => {
+    authClient.signIn.social({
+      provider: 'google',
+    });
   };
   return (
     <div className={'flex flex-col gap-6'}>
@@ -178,14 +192,19 @@ export const SignUpView = () => {
                     variant={'outline'}
                     type={'button'}
                     className={'w-full'}
+                    disabled={pending}
+                    onClick={onGoogleSignIn}
                   >
-                    Google
+                    <FaGoogle /> Google
                   </Button>
                   <Button
                     variant={'outline'}
                     type={'button'}
                     className={'w-full'}
+                    disabled={pending}
+                    onClick={onGithubSignIn}
                   >
+                    <FaGithub />
                     Github
                   </Button>
                 </div>
