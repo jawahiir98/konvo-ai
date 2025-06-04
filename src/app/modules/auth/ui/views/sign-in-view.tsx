@@ -19,6 +19,7 @@ import { OctagonAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
+import { FaGithub, FaGoogle } from 'react-icons/fa';
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -141,7 +142,7 @@ export const SignInView = () => {
                     disabled={pending}
                     onClick={onGoogleSignIn}
                   >
-                    Google
+                    <FaGoogle /> Google
                   </Button>
                   <Button
                     variant={'outline'}
@@ -150,7 +151,7 @@ export const SignInView = () => {
                     disabled={pending}
                     onClick={onGithubSignIn}
                   >
-                    Github
+                    <FaGithub /> Github
                   </Button>
                 </div>
                 <div className="text-center text-sm">

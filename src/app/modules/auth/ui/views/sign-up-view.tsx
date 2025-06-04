@@ -18,7 +18,9 @@ import {
 import { OctagonAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
+import { FaGithub, FaGoogle } from 'react-icons/fa';
 
 const formSchema = z
   .object({
@@ -35,6 +37,7 @@ const formSchema = z
   });
 
 export const SignUpView = () => {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,6 +62,7 @@ export const SignUpView = () => {
       {
         onSuccess: () => {
           setPending(false);
+          router.push('/');
         },
         onError: (error) => {
           setError(error.error.message);
@@ -191,7 +195,7 @@ export const SignUpView = () => {
                     disabled={pending}
                     onClick={onGoogleSignIn}
                   >
-                    Google
+                    <FaGoogle /> Google
                   </Button>
                   <Button
                     variant={'outline'}
@@ -200,6 +204,7 @@ export const SignUpView = () => {
                     disabled={pending}
                     onClick={onGithubSignIn}
                   >
+                    <FaGithub />
                     Github
                   </Button>
                 </div>
