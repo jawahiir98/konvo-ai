@@ -28,7 +28,7 @@ export const DashboardUserButton = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="rounded-lg border border-border/10 p-3 w-full flex
+        className="rounded-lg border border-border/10 p-3 w-full flex space-x-2
         items-center justify-between bg-white/5 hover:bg-white/10 overflow-hidden"
       >
         {data.user.image ? (
