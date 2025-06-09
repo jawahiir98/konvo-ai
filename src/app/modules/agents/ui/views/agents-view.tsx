@@ -6,6 +6,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 export const AgentsView = () => {
   const trpc = useTRPC();
   const { data } = useSuspenseQuery(trpc.agents.getMany.queryOptions());
-
+  console.log(data);
   return <div>{JSON.stringify(data, null, 2)}</div>;
 };
