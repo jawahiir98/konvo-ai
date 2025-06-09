@@ -1,8 +1,10 @@
 import { AgentsView } from '@/app/modules/agents/ui/views/agents-view';
 import { trpc, getQueryClient } from '@/trpc/server';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
+import { ListHeader } from '@/app/modules/agents/ui/components/list-header';
 import { LoadingState } from '@/components/loading-state';
 import { Suspense } from 'react';
+
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorState } from '@/components/error-state';
 
@@ -23,13 +25,16 @@ const Agents = async () => {
   void queryClient.prefetchQuery(trpc.agents.getMany.queryOptions());
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<AgentsViewLoading />}>
-        <ErrorBoundary fallback={<AgentsError />}>
-          <AgentsView />
-        </ErrorBoundary>
-      </Suspense>
-    </HydrationBoundary>
+    <>
+      <ListHeader />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <Suspense fallback={<AgentsViewLoading />}>
+          <ErrorBoundary fallback={<AgentsError />}>
+            <AgentsView />
+          </ErrorBoundary>
+        </Suspense>
+      </HydrationBoundary>
+    </>
   );
 };
 export default Agents;
