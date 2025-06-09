@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useTRPC } from '@/trpc/client';
 import { AgentGetOne } from '../../types';
 import { z } from 'zod';
@@ -10,7 +11,6 @@ import {
   FormField,
   FormControl,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -27,13 +27,26 @@ interface Props {
 
 export const AgentsForm = ({ onSuccess, onCancel, initialValues }: Props) => {
   const trpc = useTRPC();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
-      onSuccess: () => {},
-      onError: () => {},
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions());
+
+        if (initialValues?.id) {
+          await queryClient.invalidateQueries(
+            trpc.agents.getOne.queryOptions({ id: initialValues.id })
+          );
+        }
+        if (typeof onSuccess === 'function') {
+          onSuccess();
+        }
+      },
+      onError: (error) => {
+        console.error('Mutation failed', error);
+        toast.error(error.message || 'Something went wrong');
+      },
     })
   );
 

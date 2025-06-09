@@ -4,7 +4,9 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { ListHeader } from '@/app/modules/agents/ui/components/list-header';
 import { LoadingState } from '@/components/loading-state';
 import { Suspense } from 'react';
-
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorState } from '@/components/error-state';
 
@@ -23,7 +25,12 @@ const AgentsError = () => {
 const Agents = async () => {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery(trpc.agents.getMany.queryOptions());
-
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session) {
+    redirect('/sign-in');
+  }
   return (
     <>
       <ListHeader />
