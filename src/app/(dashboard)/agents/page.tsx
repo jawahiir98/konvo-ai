@@ -9,22 +9,19 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorState } from '@/components/error-state';
+import type { SearchParams } from 'nuqs';
+import { loadSearchParams } from '@/app/modules/agents/params';
 
-const AgentsViewLoading = () => {
-  return (
-    <LoadingState
-      title={'Loading Agents'}
-      description={'This may take a few seconds.'}
-    />
-  );
-};
+interface Props {
+  searchParams: Promise<SearchParams>;
+}
 
-const AgentsError = () => {
-  return <ErrorState title={'Error'} description={'Failed to load agents'} />;
-};
-const Agents = async () => {
+const Agents = async ({ searchParams }: Props) => {
+  const filters = await loadSearchParams(searchParams);
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(trpc.agents.getMany.queryOptions());
+  void queryClient.prefetchQuery(
+    trpc.agents.getMany.queryOptions({ ...filters })
+  );
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -43,5 +40,18 @@ const Agents = async () => {
       </HydrationBoundary>
     </>
   );
+};
+
+const AgentsViewLoading = () => {
+  return (
+    <LoadingState
+      title={'Loading Agents'}
+      description={'This may take a few seconds.'}
+    />
+  );
+};
+
+const AgentsError = () => {
+  return <ErrorState title={'Error'} description={'Failed to load agents'} />;
 };
 export default Agents;

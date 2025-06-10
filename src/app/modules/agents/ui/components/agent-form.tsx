@@ -1,5 +1,4 @@
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTRPC } from '@/trpc/client';
@@ -32,7 +31,9 @@ export const AgentsForm = ({ onSuccess, onCancel, initialValues }: Props) => {
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions());
+        await queryClient.invalidateQueries(
+          trpc.agents.getMany.queryOptions({})
+        );
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(
