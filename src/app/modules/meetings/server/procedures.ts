@@ -11,7 +11,7 @@ import {
 import { eq, and, getTableColumns, ilike, desc, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 
-export const agentsRouter = createTRPCRouter({
+export const meetingsRouter = createTRPCRouter({
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
