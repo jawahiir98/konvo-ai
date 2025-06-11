@@ -1,18 +1,20 @@
 'use client';
 
-import { AgentIdViewHeader } from '@/app/modules/agents/ui/views/agent-id-view-header';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useConfirm } from '@/hooks/use-confirm';
+import { useTRPC } from '@/trpc/client';
+import { toast } from 'sonner';
 import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useTRPC } from '@/trpc/client';
-import { useConfirm } from '@/hooks/use-confirm';
+import { VideoIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PlaceholderAvatar } from '@/components/placeholder-avatar';
-import { VideoIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { AgentIdViewHeader } from '@/app/modules/agents/ui/views/agent-id-view-header';
+import { UpdateAgentDialog } from '@/app/modules/agents/ui/components/update-agent-dialog';
 
 interface Props {
   agentId: string;
@@ -25,6 +27,7 @@ export const AgentIdView = ({ agentId }: Props) => {
   const { data } = useSuspenseQuery(
     trpc.agents.getOne.queryOptions({ id: agentId })
   );
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const removeAgent = useMutation(
     trpc.agents.remove.mutationOptions({
       onSuccess: async () => {
@@ -54,7 +57,7 @@ export const AgentIdView = ({ agentId }: Props) => {
         <AgentIdViewHeader
           agentId={agentId}
           agentName={data.name}
-          onEdit={() => {}}
+          onEdit={() => setIsEditDialogOpen(true)}
           onRemove={onRemoveAgent}
         />
         <div className={'bg-white rounded-lg border '}>
@@ -78,6 +81,11 @@ export const AgentIdView = ({ agentId }: Props) => {
         </div>
       </div>
       <RemoveConfirmation />
+      <UpdateAgentDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        initialValues={data}
+      />
     </>
   );
 };
