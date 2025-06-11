@@ -10,11 +10,12 @@ import {
   MIN_PAGE_SIZE,
 } from '@/constants';
 import { eq, and, sql, getTableColumns, ilike, desc, count } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
 
 export const agentsRouter = createTRPCRouter({
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const [existingAgent] = await db
         .select({
           // TODO: Change to actual number
@@ -22,7 +23,14 @@ export const agentsRouter = createTRPCRouter({
           ...getTableColumns(agents),
         })
         .from(agents)
-        .where(eq(agents.id, input.id));
+        .where(
+          and(eq(agents.id, input.id), eq(agents.userId, ctx.auth.user.id))
+        );
+      if (!existingAgent)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Agent with id ${input.id} does not exist`,
+        });
       return existingAgent;
     }),
   getMany: protectedProcedure
