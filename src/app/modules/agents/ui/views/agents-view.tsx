@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useTRPC } from '@/trpc/client';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { DataTable } from '../components/data-table';
+import { DataTable } from '../../../../../components/data-table';
 import { columns } from '../components/columns';
 import { EmptyState } from '@/app/modules/agents/ui/components/empty-table-state';
 import { useAgentsFilters } from '@/app/modules/agents/hooks/use-agents-filters';
