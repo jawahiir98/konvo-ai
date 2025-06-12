@@ -10,6 +10,8 @@ import {
 } from '@/constants';
 import { eq, and, getTableColumns, ilike, desc, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { meetingsInsertSchema } from '@/app/modules/meetings/server/schema';
+import { meetingsUpdateSchema } from '@/app/modules/meetings/server/schema';
 
 export const meetingsRouter = createTRPCRouter({
   getOne: protectedProcedure
@@ -26,7 +28,7 @@ export const meetingsRouter = createTRPCRouter({
       if (!existingMeeting)
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: `Agent with id ${input.id} does not exist`,
+          message: `Meeting with id ${input.id} does not exist`,
         });
       return existingMeeting;
     }),
@@ -75,5 +77,36 @@ export const meetingsRouter = createTRPCRouter({
         total: total.count,
         totalPages,
       };
+    }),
+  create: protectedProcedure
+    .input(meetingsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const [createdMeeting] = await db
+        .insert(meetings)
+        .values({
+          ...input,
+          userId: ctx.auth.user.id,
+        })
+        .returning();
+      // TODO: Create stream call, upsert stream users
+      return createdMeeting;
+    }),
+  update: protectedProcedure
+    .input(meetingsUpdateSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [updatedMeeting] = await db
+        .update(meetings)
+        .set(input)
+        .where(
+          and(eq(meetings.id, input.id), eq(meetings.userId, ctx.auth.user.id))
+        )
+        .returning();
+      if (!updatedMeeting) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Meeting not found',
+        });
+      }
+      return updatedMeeting;
     }),
 });
