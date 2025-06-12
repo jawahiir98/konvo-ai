@@ -7,13 +7,26 @@ import { ErrorState } from '@/components/error-state';
 import { DataTable } from '@/components/data-table';
 import { columns } from '@/app/modules/meetings/ui/components/columns';
 import { EmptyState } from '@/app/modules/agents/ui/components/empty-table-state';
+import { useMeetingsFilters } from '@/app/modules/meetings/hooks/use-meetings-filters';
+import { useRouter } from 'next/navigation';
 
 export const MeetingsView = () => {
+  const router = useRouter();
   const trpc = useTRPC();
-  const { data } = useSuspenseQuery(trpc.meetings.getMany.queryOptions({}));
+  const [filters] = useMeetingsFilters();
+  const { data } = useSuspenseQuery(
+    trpc.meetings.getMany.queryOptions({ ...filters })
+  );
+  const onRowClick = (row: any) => {
+    router.push(`/meetings/${row.id}`);
+  };
   return (
     <div className={'flex-1 pb-4 px-8 md:px-4 flex flex-col gap-y-4'}>
-      <DataTable columns={columns} data={data.items} />
+      <DataTable
+        columns={columns}
+        data={data.items}
+        onRowClick={(row) => onRowClick(row)}
+      />
       {data.items.length === 0 && (
         <EmptyState
           title={'Create your first meeting'}
