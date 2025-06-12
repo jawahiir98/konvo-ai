@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { NewAgentDialog } from './new-agent-dialog';
 import { PlusIcon, XCircleIcon } from 'lucide-react';
 import { DEFAULT_PAGE } from '@/constants';
@@ -24,7 +25,7 @@ export const ListHeader = () => {
   };
   return (
     <>
-      <div className={'p-4 md:px-8 flex flex-col gap-y-4'}>
+      <div className={'px-4 py-4 md:px-8 flex flex-col gap-y-4'}>
         <div className="flex items-center justify-between">
           <h5 className={'font-medium text-xl'}>My Agents</h5>
           <Button onClick={onToggleOpen}>
@@ -33,9 +34,12 @@ export const ListHeader = () => {
           </Button>
         </div>
       </div>
-      <div className="flex items-center gap-x-2 py-1 px-2">
-        <AgentsSearchFilters />
-      </div>
+      <ScrollArea>
+        <div className="flex items-center gap-x-2 py-1 px-4">
+          <AgentsSearchFilters />
+        </div>
+        <ScrollBar orientation={'horizontal'} />
+      </ScrollArea>
       {isAnyFilterModified && (
         <Button onClick={onClearFilters} variant={'outline'} size={'sm'}>
           <XCircleIcon /> Clear

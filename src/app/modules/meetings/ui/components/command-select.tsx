@@ -34,13 +34,16 @@ export const CommandSelect = ({
 }: Props) => {
   const [open, setOpen] = useState(false);
   const selectedOption = options.find((option) => option.id === value);
-
+  const onOpenChange = () => {
+    onSearch?.('');
+    setOpen(!open);
+  };
   return (
     <>
       <Button
         variant={'outline'}
         type={'button'}
-        onClick={() => setOpen(!open)}
+        onClick={onOpenChange}
         className={cn(
           className,
           'h-9 justify-between font-normal px-2',
