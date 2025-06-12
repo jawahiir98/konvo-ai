@@ -1,0 +1,133 @@
+import { createTRPCRouter, protectedProcedure } from '@/trpc/init';
+import { z } from 'zod';
+import { db } from '@/db';
+import { agents, meetings } from '@/db/schema';
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  MIN_PAGE_SIZE,
+} from '@/constants';
+import { eq, and, getTableColumns, ilike, desc, count, sql } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
+import { MeetingStatus } from '@/app/modules/meetings/types';
+import { meetingsInsertSchema } from '@/app/modules/meetings/server/schema';
+import { meetingsUpdateSchema } from '@/app/modules/meetings/server/schema';
+
+export const meetingsRouter = createTRPCRouter({
+  getOne: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [existingMeeting] = await db
+        .select({
+          ...getTableColumns(meetings),
+        })
+        .from(meetings)
+        .where(
+          and(eq(meetings.id, input.id), eq(meetings.userId, ctx.auth.user.id))
+        );
+      if (!existingMeeting)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Meeting with id ${input.id} does not exist`,
+        });
+      return existingMeeting;
+    }),
+  getMany: protectedProcedure
+    .input(
+      z.object({
+        page: z.number().default(DEFAULT_PAGE),
+        pageSize: z
+          .number()
+          .min(MIN_PAGE_SIZE)
+          .max(MAX_PAGE_SIZE)
+          .default(DEFAULT_PAGE_SIZE),
+        search: z.string().nullish(),
+        agentId: z.string().nullish(),
+        status: z
+          .enum([
+            MeetingStatus.Active,
+            MeetingStatus.Cancelled,
+            MeetingStatus.Completed,
+            MeetingStatus.Processing,
+            MeetingStatus.Upcoming,
+          ])
+          .nullish(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { search, page, pageSize, status, agentId } = input;
+      const data = await db
+        .select({
+          ...getTableColumns(meetings),
+          agent: agents,
+          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at-started_at))`.as(
+            'duration'
+          ),
+        })
+        .from(meetings)
+        .innerJoin(agents, eq(meetings.agentId, agents.id))
+        .where(
+          and(
+            eq(meetings.userId, ctx.auth.user.id),
+            search ? ilike(meetings.name, `%${search}%`) : undefined,
+            status ? eq(meetings.status, status) : undefined,
+            agentId ? eq(meetings.agentId, agentId) : undefined
+          )
+        )
+        .orderBy(desc(meetings.createdAt), desc(meetings.id))
+        .limit(pageSize)
+        .offset(pageSize * (page - 1));
+      const [total] = await db
+        .select({
+          count: count(),
+        })
+        .from(meetings)
+        .innerJoin(agents, eq(meetings.agentId, agents.id))
+        .where(
+          and(
+            eq(meetings.userId, ctx.auth.user.id),
+            search ? ilike(meetings.name, `%${search}%`) : undefined,
+            status ? eq(meetings.status, status) : undefined,
+            agentId ? eq(meetings.agentId, agentId) : undefined
+          )
+        );
+      const totalPages = Math.ceil(total.count / pageSize);
+      return {
+        items: data,
+        total: total.count,
+        totalPages,
+      };
+    }),
+  create: protectedProcedure
+    .input(meetingsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const [createdMeeting] = await db
+        .insert(meetings)
+        .values({
+          ...input,
+          userId: ctx.auth.user.id,
+        })
+        .returning();
+      // TODO: Create stream call, upsert stream users
+      return createdMeeting;
+    }),
+  update: protectedProcedure
+    .input(meetingsUpdateSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [updatedMeeting] = await db
+        .update(meetings)
+        .set(input)
+        .where(
+          and(eq(meetings.id, input.id), eq(meetings.userId, ctx.auth.user.id))
+        )
+        .returning();
+      if (!updatedMeeting) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Meeting not found',
+        });
+      }
+      return updatedMeeting;
+    }),
+});
