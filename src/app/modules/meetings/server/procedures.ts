@@ -13,6 +13,8 @@ import { TRPCError } from '@trpc/server';
 import { MeetingStatus } from '@/app/modules/meetings/types';
 import { meetingsInsertSchema } from '@/app/modules/meetings/server/schema';
 import { meetingsUpdateSchema } from '@/app/modules/meetings/server/schema';
+import { generateAvatar } from '@/lib/avatar';
+import { streamVideo } from '@/lib/stream';
 
 export const meetingsRouter = createTRPCRouter({
   getOne: protectedProcedure
@@ -114,7 +116,52 @@ export const meetingsRouter = createTRPCRouter({
           userId: ctx.auth.user.id,
         })
         .returning();
-      // TODO: Create stream call, upsert stream users
+      const call = streamVideo.video.call('default', createdMeeting.id);
+      await call.create({
+        data: {
+          created_by_id: ctx.auth.user.id,
+          custom: {
+            meetingId: createdMeeting.id,
+            meetingName: createdMeeting.name,
+          },
+          settings_override: {
+            transcription: {
+              language: 'en',
+              mode: 'auto-on',
+              closed_caption_mode: 'auto-on',
+            },
+            recording: {
+              mode: 'auto-on',
+              quality: '1080p',
+            },
+          },
+        },
+      });
+
+      const [existingAgent] = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.id, createdMeeting.agentId));
+
+      if (!existingAgent) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Agent with id ${createdMeeting.agentId} does not exist`,
+        });
+      }
+
+      await streamVideo.upsertUsers([
+        {
+          id: existingAgent.id,
+          name: existingAgent.name,
+          role: 'user',
+          image: generateAvatar({
+            seed: existingAgent.name,
+            variant: 'botttsNeutral',
+          }),
+        },
+      ]);
+
       return createdMeeting;
     }),
   update: protectedProcedure
@@ -152,4 +199,27 @@ export const meetingsRouter = createTRPCRouter({
       }
       return removedMeeting;
     }),
+  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
+    await streamVideo.upsertUsers([
+      {
+        id: ctx.auth.user.id,
+        name: ctx.auth.user.name,
+        role: 'admin',
+        image:
+          ctx.auth.user.image ??
+          generateAvatar({
+            seed: ctx.auth.user.name,
+            variant: 'botttsNeutral',
+          }),
+      },
+    ]);
+    const expirationTime = Math.floor(Date.now() / 1000) + 3600;
+    const issuedAt = Math.floor(Date.now() / 1000) - 60;
+
+    return streamVideo.generateUserToken({
+      user_id: ctx.auth.user.id,
+      exp: expirationTime,
+      validity_in_seconds: issuedAt,
+    });
+  }),
 });
