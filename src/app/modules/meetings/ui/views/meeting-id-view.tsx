@@ -14,6 +14,10 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useConfirm } from '@/hooks/use-confirm';
 import { UpdateMeetingDialog } from '@/app/modules/meetings/ui/components/update-meeting-dialog';
+import { UpcomingState } from '@/app/modules/meetings/ui/components/upcoming-state';
+import { ActiveState } from '@/app/modules/meetings/ui/components/active-state';
+import { CancelledState } from '@/app/modules/meetings/ui/components/cancelled-state';
+import { ProcessingState } from '@/app/modules/meetings/ui/components/processing-state';
 
 interface Props {
   meetingId: string;
@@ -26,6 +30,12 @@ export const MeetingIdView = ({ meetingId }: Props) => {
   const { data } = useSuspenseQuery(
     trpc.meetings.getOne.queryOptions({ id: meetingId })
   );
+
+  const isActive = data.status === 'active';
+  const isUpcoming = data.status === 'upcoming';
+  const isCancelled = data.status === 'cancelled';
+  const isProcessing = data.status === 'processing';
+  const isCompleted = data.status === 'completed';
 
   const [RemoveConfirmation, confirmRemove] = useConfirm(
     'Are you sure you want to remove this meeting?',
@@ -61,6 +71,17 @@ export const MeetingIdView = ({ meetingId }: Props) => {
           onEdit={() => setIsEditMeetingDialogOpen(true)}
           onRemove={onRemoveMeeting}
         />
+        {isCancelled && <CancelledState />}
+        {isActive && <ActiveState meetingId={meetingId} />}
+        {isUpcoming && (
+          <UpcomingState
+            meetingId={meetingId}
+            onCancelMeeting={() => {}}
+            isCancelling={false}
+          />
+        )}
+        {isProcessing && <ProcessingState />}
+        {isCompleted && <div>Completed</div>}
       </div>
       <RemoveConfirmation />
       <UpdateMeetingDialog
