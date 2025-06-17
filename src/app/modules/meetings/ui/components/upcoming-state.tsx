@@ -1,4 +1,3 @@
-'use client';
 import { EmptyState } from '@/app/modules/agents/ui/components/empty-table-state';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
